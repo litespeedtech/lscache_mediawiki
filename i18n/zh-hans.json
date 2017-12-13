@@ -1,0 +1,27 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wuhua"
+		]
+	},
+        "litespeedcache": "LiteSpeed缓存",
+	"litespeedcache_title": "LiteSpeed缓存",
+	"litespeedcache_desc": "LiteSpeed服务器针对MediaWiki的缓存功能",
+	"litespeedcache_lscache_enabled": "启用LiteSpeed公共缓存功能: ",
+	"litespeedcache_login_user_cachable": "启用LiteSpeed个人缓存功能(用于登录用户)*: ",
+	"litespeedcache_public_cache_timeout": "LiteSpeed公共缓存有效时长（毫秒）: ",
+	"litespeedcache_private_cache_timeout": "LiteSpeed个人缓存有效时长（毫秒）: ",
+    	"litespeedcache_logging_enabled": "启用LiteSpeed缓存日志功能: ",
+	"litespeedcache_save": "保存缓存设置",
+	"litespeedcache_purge": "清除所有缓存",
+	"litespeedcache_restore": "恢复默认设置",
+	"litespeedcache_clear": "清除所有日志",
+	"litespeedcache_beta": "此功能处于beta测试阶段，如有任何问题请禁用此功能并反馈给我们",
+	"litespeedcache_enabled": "已启用",
+	"litespeedcache_disabled": "已禁用",
+    	"litespeedcache_change_setting": "编辑",
+	"log-name-litespeedcache": "LiteSpeed缓存日志",
+	"litespeedcache_show_logs": "日志",
+	"log-description-litespeedcache": "LiteSpeed缓存的操作日志"
+
+}

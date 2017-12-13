@@ -1,0 +1,32 @@
+{
+	"name": "LiteSpeedCache",
+	"author": "Wuhua Chen",
+	"url": "https://www.mediawiki.org/wiki/Extension:LiteSpeedCache",
+	"descriptionmsg": "LiteSpeed LSCache for MediaWiki",
+	"license-name": "GPL-2.0+",
+	"type": "parserhook",
+    	"callback": "LiteSpeedCache::onRegisterExtension",
+	"MessagesDirs": {
+		"LiteSpeedCache": [
+			"i18n"
+		]
+	},
+	"SpecialPages": {
+		"LiteSpeedCache": "SpecialLiteSpeedCache"
+	},
+	"Hooks": {
+		"ArticleDeleteComplete": "LiteSpeedCache::onArticleDeleteComplete",
+		"PageContentSaveComplete": "LiteSpeedCache::onPageContentSaveComplete",
+		"ArticlePageDataAfter": "LiteSpeedCache::onArticlePageDataAfter",
+		"UserSaveSettings": "LiteSpeedCache::onUserSaveSettings",
+        	"UserLoginComplete": "LiteSpeedCache::onUserLoginComplete",
+		"UserLogoutComplete": "LiteSpeedCache::onUserLogoutComplete",
+                "LoadExtensionSchemaUpdates" : "LiteSpeedCache::onLoadExtensionSchemaUpdates"
+        },
+	"AutoloadClasses": {
+		"SpecialLiteSpeedCache": "SpecialLiteSpeedCache.php",
+		"LiteSpeedCache": "LiteSpeedCache_body.php",
+		"LiteSpeedCacheCore": "LiteSpeedCacheCore.php"
+	},
+	"manifest_version": 1
+}

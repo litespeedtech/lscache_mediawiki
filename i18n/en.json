@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wuhua"
+		]
+	},
+        
+	"litespeedcache": "LiteSpeed Cache",
+	"litespeedcache_title": "LiteSpeed Cache",
+	"litespeedcache_desc": "LiteSpeed Webserver LSCache Function for MediaWiki: ",
+	"litespeedcache_lscache_enabled": "LiteSpeed public Cache Enabled: ",
+	"litespeedcache_login_user_cachable": "LiteSpeed private Cache Enabled(for login users)*: ",
+	"litespeedcache_public_cache_timeout": "LiteSpeed public Cache TTL(ms): ",
+	"litespeedcache_private_cache_timeout": "LiteSpeed private Cache TTL(ms): ",
+	"litespeedcache_logging_enabled": "LiteSpeed Cache Logging Enabled: ",
+	"litespeedcache_save": "Save Cache Setting",
+	"litespeedcache_purge": "Purge All Cache",
+	"litespeedcache_restore": "Restore default setting",
+	"litespeedcache_clear": "Clear All Log",
+	"litespeedcache_beta": "This fearture is in early beta testing period, please disable it and feed back once any problem be found.",
+	"litespeedcache_enabled": "Enabled",
+	"litespeedcache_disabled": "Disabled",
+	"litespeedcache_change_setting": "Edit",
+	"litespeedcache_show_logs": "Logs",
+	"log-name-litespeedcache": "LiteSpeed Cache Log",
+	"log-description-litespeedcache": "These events track when LiteSpeed Cache action happens."
+    
+}
