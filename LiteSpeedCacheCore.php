@@ -190,7 +190,7 @@ class LiteSpeedCacheCore
         }
 
         $LShead = self::_public_cache_control . $this->public_cache_timeout;
-        self::liteSpeedHeader($LShead);
+        $this->liteSpeedHeader($LShead);
 
         $siteTags = Array();
         if ($this->site_only_tag != "") {
@@ -199,7 +199,7 @@ class LiteSpeedCacheCore
         $this->tagsForSite($siteTags, $publicTags);
         $LShead = $this->tagCommand( self::_Cache_Tag ,  $siteTags);
 
-        self::liteSpeedHeader($LShead);
+        $this->liteSpeedHeader($LShead);
     }
 
     /**
@@ -218,7 +218,7 @@ class LiteSpeedCacheCore
         }
 
         $LShead = self::_private_cache_control . $this->private_cache_timeout;
-        self::liteSpeedHeader($LShead);
+        $this->liteSpeedHeader($LShead);
 
         $siteTags = Array();
         $this->tagsForSite($siteTags, $publicTags, "public:");
@@ -235,7 +235,7 @@ class LiteSpeedCacheCore
             }
         }
         $LShead = $this->tagCommand( self::_Cache_Tag ,  $siteTags);
-        self::liteSpeedHeader($LShead);
+        $this->liteSpeedHeader($LShead);
     }
 
     /**
