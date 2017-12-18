@@ -19,8 +19,8 @@ class LiteSpeedCache
     private static $logging_enabled = false;
     private static $userLogedin;
     private static $lscInstance;
-    private static $debugEnabled = false;
-    private static $debugFile = 'lscache.log';
+    private static $debugEnabled = true;
+    private static $settingLoad = false;
 
     /**
      *
@@ -31,8 +31,10 @@ class LiteSpeedCache
     public static function onRegisterExtension()
     {
         global $wgLogTypes;
-
         array_push($wgLogTypes, "litespeedcache");
+        self::$lscInstance = LiteSpeedCacheCore::getInstance();
+        global $wgExtensionDirectory;
+        self::$lscInstance->setSiteOnlyTag(substr(md5($wgExtensionDirectory), 0, 4));
     }
 
     /**
@@ -41,19 +43,16 @@ class LiteSpeedCache
      *
      * @since 1.0.0
      */
-    private static function init($reload = false)
+    private static function loadSetting($reload = false)
     {
         self::log(__METHOD__);
 
-        if (isset(self::$lscInstance)) {
+        if (self::$settingLoad) {
             if (!$reload) {
                 return;
             }
         }
-
-        self::$lscInstance = LiteSpeedCacheCore::getInstance();
-        global $wgExtensionDirectory;
-        self::$lscInstance->setSiteOnlyTag(substr(md5($wgExtensionDirectory), 0, 4));
+        self::$settingLoad = true;
 
         $config = self::getLiteSpeedSettig();
         if ($config == null) {
@@ -76,7 +75,7 @@ class LiteSpeedCache
     {
         self::log(__METHOD__);
 
-        self::init();
+        self::loadSetting();
         if (!self::$lscache_enabled) {
             return;
         }
@@ -97,7 +96,7 @@ class LiteSpeedCache
     {
         self::log(__METHOD__);
 
-        self::init();
+        self::loadSetting();
         if (!self::$lscache_enabled) {
             return;
         }
@@ -122,7 +121,7 @@ class LiteSpeedCache
             return;
         }
 
-        self::init();
+        self::loadSetting();
         if (!self::$lscache_enabled) {
             return;
         }
@@ -131,10 +130,13 @@ class LiteSpeedCache
 
         if (self::isUserLogin()) {
             if (self::$login_user_cachable) {
-                self::$lscInstance->cachePrivate($tag, null);
+                self::$lscInstance->checkPrivateCookie();
+                self::$lscInstance->cachePrivate($tag);
+                self::$lscInstance->vary('Login');
             }
         } else {
             self::$lscInstance->cachePublic($tag);
+            self::$lscInstance->vary('Logout');
         }
 
         global $wgUser;
@@ -150,15 +152,14 @@ class LiteSpeedCache
     public static function onUserLoginComplete(User &$user, &$inject_html, $direct)
     {
         self::log(__METHOD__);
-        self::init();
+        self::$lscInstance->checkPrivateCookie();
+        self::$lscInstance->vary('Login');
+        self::$userLogedin = true;
+
+        self::loadSetting();
         if (!self::$lscache_enabled) {
             return;
         }
-
-        self::$userLogedin = true;
-        self::$lscInstance->checkPrivateCookie();
-        self::$lscInstance->vary($user->mName);
-        $_SESSION['_lsc_user'] = $user->mName;
 
         if (self::$login_user_cachable) {
             self::$lscInstance->purgeAllPrivate();
@@ -176,14 +177,14 @@ class LiteSpeedCache
     public static function onUserLogoutComplete(&$user, &$inject_html, $old_name)
     {
         self::log(__METHOD__);
-        self::init();
+
+        self::$lscInstance->vary('Logout');
+        self::$userLogedin = false;
+        
+        self::loadSetting();
         if (!self::$lscache_enabled) {
             return;
         }
-
-        self::$userLogedin = false;
-        self::$lscInstance->checkPrivateCookie(false);
-        self::$lscInstance->vary();
 
         if (self::$login_user_cachable) {
             self::$lscInstance->purgeAllPrivate();
@@ -202,7 +203,7 @@ class LiteSpeedCache
     {
         self::log(__METHOD__);
 
-        self::init();
+        self::loadSetting();
         if (!self::$lscache_enabled) {
             return;
         }
@@ -220,32 +221,23 @@ class LiteSpeedCache
      *
      * @since   0.1
      */
-    public static function isUserLogin()
+    private static function isUserLogin()
     {
-        self::log(__METHOD__);
         if (isset(self::$userLogedin)) {
             return self::$userLogedin;
         }
 
-        if (!isset($_COOKIE[LiteSpeedCacheCore::_private_cookie])) {
+        global $wgUser;
+        
+        if($wgUser==null){
+            return false;
+        }
+        
+        if(!$wgUser instanceof User){
             return false;
         }
 
-        # start checking session expired but cookie still exists
-        if (version_compare(phpversion(), '5.4.0', '<')) {
-            if (session_id() == '') {
-                session_start();
-            }
-        } else if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        if (!isset($_SESSION["_lsc_user"])) {
-            self::$lscInstance->checkPrivateCookie(false);
-            return false;
-        }
-
-        return true;
+        return $wgUser->isLoggedIn();
     }
 
     /**
@@ -303,18 +295,13 @@ class LiteSpeedCache
     public static function saveLiteSpeedSetting($config, $user = null, $target = null)
     {
         self::log(__METHOD__);
-        self::init();
+        self::loadSetting();
 
         $db = wfGetDB(DB_MASTER);
 
-        if ($config["lscache_enabled"] != self::$lscache_enabled) {
+        if (($config["lscache_enabled"] != self::$lscache_enabled) || ($config["login_user_cachable"] != self::$login_user_cachable)) {
             self::$lscInstance->purgeAllPublic();
-            self::log("changed public cache option", $user, $target, self::$lscInstance->getLogBuffer());
-        }
-
-        if ($config["login_user_cachable"] != self::$login_user_cachable) {
-            self::$lscInstance->purgeAllPrivate();
-            self::log("changed private cache option", $user, $target, self::$lscInstance->getLogBuffer());
+            self::log("changed cache option", $user, $target, self::$lscInstance->getLogBuffer());
         }
 
         foreach ($config as $lskey => $lsval) {
@@ -346,14 +333,17 @@ class LiteSpeedCache
 
         if (!$db->tableExists(self::_db_setting)) {
             self::log("Table litespeed_settings not exists");
-            global $wgDBtype;
+            global $wgDBtype, $wgDBprefix;
+            $sql="";
             if ($wgDBtype == "sqllite") {
                 $sql = file_get_contents('extensions/LiteSpeedCache/sqllite.sql');
-                $db->query($sql);
             } else {
                 $sql = file_get_contents('extensions/LiteSpeedCache/mysql.sql');
-                $db->query($sql);
             }
+            if($wgDBprefix!=""){
+                $sql = str_replace(self::_db_setting, $wgDBprefix.self::_db_setting, $sql);
+            }
+            $db->query($sql);
         }
 
         foreach ($config as $lskey => $lsval) {
@@ -372,11 +362,11 @@ class LiteSpeedCache
     public static function restoreLiteSpeedSetting($user = null, $target = null)
     {
         self::log(__METHOD__);
-        self::init();
         $db = wfGetDB(DB_MASTER);
         $db->delete(self::_db_setting, '*');
         self::initLiteSpeedSetting();
-        self::log("RestoreLiteSpeedSetting", $user, $target, "LiteSpeed Default Setting Restored.");
+        self::purgeAll();
+        self::log("RestoreLiteSpeedSetting", $user, $target, self::$lscInstance->getLogBuffer());
     }
 
     /**
@@ -388,7 +378,6 @@ class LiteSpeedCache
     public static function purgeAll($user = null, $target = null)
     {
         self::log(__METHOD__);
-        self::init();
         self::$lscInstance->purgeAllPublic();
         self::log("PurgeAllCache", $user, $target, self::$lscInstance->getLogBuffer());
     }
@@ -412,7 +401,7 @@ class LiteSpeedCache
      *
      * @since   1.0.0
      */
-    public static function log($action, $user = null, $target = null, $comment = null)
+    private static function log($action, $user = null, $target = null, $comment = "")
     {
         if ($action == null) {
             return;
@@ -420,7 +409,7 @@ class LiteSpeedCache
 
         if (self::$debugEnabled) {
             #wfDebug($action);
-            self::simpleDebug($action);
+            self::simpleDebug($action . $comment);
         }
 
         if (!self::$logging_enabled) {
@@ -435,7 +424,7 @@ class LiteSpeedCache
             return;
         }
 
-        if ($comment == null) {
+        if ($comment == "") {
             return;
         }
 
@@ -445,20 +434,22 @@ class LiteSpeedCache
     /**
      *
      * A simple debug function take place wfDebug() function when needed .
-     * This function need to be able to access and write file to root directory of WIKI web source code.
+     * This function need rights to write file to $debugFile in root directory of WIKI source code.
      *
      * @since   1.0.0
      */
     private static function simpleDebug($action, $user = null, $target = null, $comment = null)
     {
+        $debugFile = "lscache.log";
+        
+        date_default_timezone_set("America/New_York");
         list( $usec, $sec ) = explode(' ', microtime());
 
         if (!defined("LOG_INIT")) {
             define("LOG_INIT", true);
-            date_default_timezone_set("America/New_York");
-            file_put_contents(self::$debugFile, "\n\n" . date('m/d/y H:i:s') . substr($usec, 1, 4), FILE_APPEND);
+            file_put_contents($debugFile, "\n\n" . date('m/d/y H:i:s') . substr($usec, 1, 4), FILE_APPEND);
         }
-        file_put_contents(self::$debugFile, date('m/d/y H:i:s') . substr($usec, 1, 4) . "\t" . $action . "\n", FILE_APPEND);
+        file_put_contents($debugFile, date('m/d/y H:i:s') . substr($usec, 1, 4) . "\t" . $action . "\n", FILE_APPEND);
     }
 
     /**
@@ -467,15 +458,13 @@ class LiteSpeedCache
      *
      * @since   1.0.0
      */
-    private static function doLog($action, $user, $target, $comment = null)
+    private static function doLog($action, $user, $target, $comment = "")
     {
 
         $logEntry = new ManualLogEntry('litespeedcache', $action);
         $logEntry->setPerformer($user);
         $logEntry->setTarget($target);
-        if ($comment != null) {
-            $logEntry->setComment($comment);
-        }
+        $logEntry->setComment($comment);
         $logEntry->insert();
     }
 
@@ -497,4 +486,6 @@ class LiteSpeedCache
         return false;
     }
 
+    
+    
 }

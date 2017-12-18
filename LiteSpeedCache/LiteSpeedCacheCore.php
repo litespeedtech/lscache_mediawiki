@@ -11,7 +11,6 @@
  */
 class LiteSpeedCacheCore
 {
-
     const _public_cache_control = 'X-LiteSpeed-Cache-Control:public,max-age=';
     const _private_cache_control = 'X-LiteSpeed-Cache-Control:private,max-age=';
     const _Cache_Purge = 'X-LiteSpeed-Purge:';
@@ -71,11 +70,11 @@ class LiteSpeedCacheCore
     private function tagsForSite(Array &$tagArray, $rawTags, $prefix = "")
     {
         if (!isset($rawTags)) {
-            return "";
+            return;
         }
 
         if ($rawTags == "") {
-            return "";
+            return;
         }
 
         $tags = explode(",", $rawTags);
@@ -88,7 +87,6 @@ class LiteSpeedCacheCore
         }
     }
 
-    
     /**
      *
      * put tag in Array together to make an head command .
@@ -157,7 +155,6 @@ class LiteSpeedCacheCore
         $LShead = self::_Cache_Purge . 'public,' . $this->site_only_tag;
         $this->liteSpeedHeader($LShead);
     }
-
 
     /**
      *
@@ -229,11 +226,16 @@ class LiteSpeedCacheCore
 
         if($privateTags!=""){
             $this->tagsForSite($siteTags, $privateTags);
-
-            if($this->site_only_tag!=""){
-                array_push($siteTags,  $this->site_only_tag);
-            }
         }
+        
+        if($this->site_only_tag!=""){
+            array_push($siteTags,  $this->site_only_tag);
+        }
+        else{
+            array_push($siteTags,  'pvt');
+        }
+       
+        
         $LShead = $this->tagCommand( self::_Cache_Tag ,  $siteTags);
         $this->liteSpeedHeader($LShead);
     }
@@ -260,11 +262,11 @@ class LiteSpeedCacheCore
     {
         if ($cachePrivate) {
             if (!isset($_COOKIE[self::_private_cookie])) {
-                setcookie(self::_private_cookie, rand());
+                setcookie(self::_private_cookie, md5((String)rand()), 0, '/');
             }
         } else {
             if (isset($_COOKIE[self::_private_cookie])) {
-                setcookie(self::_private_cookie, "", time() - 3600);
+                setcookie(self::_private_cookie, "", 0, '/');
             }
         }
     }
@@ -278,10 +280,21 @@ class LiteSpeedCacheCore
     public function vary($value = "")
     {
         if ($value == "") {
-            setcookie(self::_vary_cookie, "", time() - 3600);
+            if (isset($_COOKIE[self::_vary_cookie])) {
+                setcookie(self::_vary_cookie, "", '0', '/');
+            }
             return;
         }
-        setcookie(self::_vary_cookie, $value);
+        
+        if(!isset($_COOKIE[self::_vary_cookie])){
+            setcookie(self::_vary_cookie, $value, '0', '/');
+            return;
+        }
+
+        if($_COOKIE[self::_vary_cookie] != $value){
+            setcookie(self::_vary_cookie, $value, '0', '/');
+        }
+        
     }
 
     /**

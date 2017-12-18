@@ -24,7 +24,6 @@ class SpecialLiteSpeedCache extends SpecialPage
      */
     public function execute($par)
     {
-        LiteSpeedCache::log(__METHOD__);
         $this->setHeaders();
         $output = $this->getOutput();
         $output->setPageTitle($this->msg('litespeedcache_title'));
@@ -69,12 +68,11 @@ class SpecialLiteSpeedCache extends SpecialPage
      */
     private function showForm()
     {
-        LiteSpeedCache::log(__METHOD__);
         $this->setHeaders();
         $output = $this->getOutput();
         $config = LiteSpeedCache::getLiteSpeedSettig();
 
-        $output->addHTML('<form action="" method="post">');
+        $output->addHTML('<form action="" method="post"><fieldset><Legend>Settings</Legend>');
         $output->addHtml('<br/><table id="mw-htmlform-info">');
         $html = '<tr class="mw-htmlform-field-HTMLInfoField"><td class="mw-label"><label for="lscacheEnabled">' . $this->msg('litespeedcache_lscache_enabled') . '</label></td>';
         $output->addHTML($html);
@@ -106,7 +104,7 @@ class SpecialLiteSpeedCache extends SpecialPage
         $output->addHTML($html);
         $html = '<td class="mw-input"><br/><button type = "submit" name="purge">' . $this->msg('litespeedcache_purge') . '</button>&nbsp;<button type = "submit" name="clear">' . $this->msg('litespeedcache_clear') . '</button></td></tr> ';
         $output->addHTML($html);
-        $output->addHTML('</table><br/></form>');
+        $output->addHTML('</table><br/></fieldset></form>');
         $output->addWikiMsg('litespeedcache_beta');
     }
 
@@ -117,7 +115,6 @@ class SpecialLiteSpeedCache extends SpecialPage
      */
     private function showView($fromEdit=true)
     {
-        LiteSpeedCache::log(__METHOD__);
         $config = LiteSpeedCache::getLiteSpeedSettig();
         $output = $this->getOutput();
         $wikitext = $this->msg('litespeedcache_lscache_enabled') . $this->enabled($config['lscache_enabled']);
@@ -153,7 +150,7 @@ class SpecialLiteSpeedCache extends SpecialPage
             return false;
         }
         $groups = $this->getUser()->getGroups();
-        return array_search("sysop", $groups);
+        return in_array("sysop", $groups, false);
     }
 
     private function check($val)
