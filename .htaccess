@@ -1,4 +1,0 @@
-<IfModule LiteSpeed>
-CacheRoot /tmp/lscache
-CacheLookup on
-</IfModule>

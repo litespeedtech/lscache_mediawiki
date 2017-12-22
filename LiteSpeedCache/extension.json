@@ -2,7 +2,7 @@
 	"name": "LiteSpeedCache",
 	"author": "LiteSpeed Technologies",
 	"url": "https://www.mediawiki.org/wiki/Extension:LiteSpeedCache",
-	"descriptionmsg": "LiteSpeed LSCache for MediaWiki",
+	"descriptionmsg": "litespeedcache_comment",
 	"license-name": "GPL-2.0+",
 	"type": "parserhook",
     	"callback": "LiteSpeedCache::onRegisterExtension",
@@ -20,13 +20,13 @@
 		"ArticlePageDataAfter": "LiteSpeedCache::onArticlePageDataAfter",
 		"UserSaveSettings": "LiteSpeedCache::onUserSaveSettings",
         	"UserLoginComplete": "LiteSpeedCache::onUserLoginComplete",
-		"UserLogoutComplete": "LiteSpeedCache::onUserLogoutComplete",
-                "LoadExtensionSchemaUpdates" : "LiteSpeedCache::onLoadExtensionSchemaUpdates"
+		"UserLogoutComplete": "LiteSpeedCache::onUserLogoutComplete"
         },
 	"AutoloadClasses": {
+		"LiteSpeedCacheBase": "LiteSpeedCacheBase.php",
+		"LiteSpeedCacheCore": "LiteSpeedCacheCore.php",
 		"SpecialLiteSpeedCache": "SpecialLiteSpeedCache.php",
-		"LiteSpeedCache": "LiteSpeedCache_body.php",
-		"LiteSpeedCacheCore": "LiteSpeedCacheCore.php"
+		"LiteSpeedCache": "LiteSpeedCache_body.php"
 	},
 	"manifest_version": 1
 }

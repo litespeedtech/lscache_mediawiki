@@ -1,54 +1,18 @@
 <?php
 
 /**
- * General Core function of communicating with LSWS for LSCache operations
- * 
+ * Core function of communicating with LSWS Server for LSCache operations
+ * The Core class works at site level, its operation will only affect a site in the server.
  *
  * @since      1.0.0
  * @author     LiteSpeed Technologies <info@litespeedtech.com>
  * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-class LiteSpeedCacheCore
+class LiteSpeedCacheCore extends LiteSpeedCacheBase
 {
-    const _public_cache_control = 'X-LiteSpeed-Cache-Control:public,max-age=';
-    const _private_cache_control = 'X-LiteSpeed-Cache-Control:private,max-age=';
-    const _Cache_Purge = 'X-LiteSpeed-Purge:';
-    const _Cache_Tag = 'X-LiteSpeed-Tag:';
-    const _vary_cookie = '_lscache_vary';
-    const _private_cookie = 'lsc_private';
 
-    private static $singleton;
-    private $site_only_tag = "";
-    private $public_cache_timeout = '1000000';
-    private $private_cache_timeout = '5000';
-    private $logbuffer = "";
-
-    /**
-     *
-     *  get a singleton instance for this class
-     *
-     * @since   1.0.0
-     */
-    public static function getInstance()
-    {
-        if (!isset(self::$singleton)) {
-            self::$singleton = new LiteSpeedCacheCore();
-        }
-        return self::$singleton;
-    }
-
-    /**
-     *
-     *  load class configuration from $config param
-     *
-     * @since   1.0.0
-     */
-    public function config($config)
-    {
-        $this->public_cache_timeout = $config['public_cache_timeout'];
-        $this->private_cache_timeout = $config['private_cache_timeout'];
-    }
+    protected $site_only_tag = "";
 
     /**
      *
@@ -56,9 +20,14 @@ class LiteSpeedCacheCore
      *
      * @since   1.0.0
      */
-    public function setSiteOnlyTag($tag)
+    public function __construct($tag = '')
     {
-        $this->site_only_tag = $tag;
+        if(!isset($tag) || ($tag=='')){
+            $this->site_only_tag = substr(md5(__DIR__),0,4);
+        }
+        else{
+            $this->site_only_tag = $tag;
+        }
     }
 
     /**
@@ -67,7 +36,7 @@ class LiteSpeedCacheCore
      *
      * @since   1.0.0
      */
-    private function tagsForSite(Array &$tagArray, $rawTags, $prefix = "")
+    protected function tagsForSite(Array &$tagArray, $rawTags, $prefix = "")
     {
         if (!isset($rawTags)) {
             return;
@@ -80,62 +49,11 @@ class LiteSpeedCacheCore
         $tags = explode(",", $rawTags);
         
         foreach ($tags as $tag) {
-            $tagStr = $prefix . $this->site_only_tag . $tag;
+            $tagStr = $prefix . $this->site_only_tag . trim($tag);
             if(!in_array($tagStr, $tagArray, false)){
                 array_push($tagArray, $tagStr);
             }
         }
-    }
-
-    /**
-     *
-     * put tag in Array together to make an head command .
-     *
-     * @since   1.0.0
-     */
-    private function tagCommand($start, Array $tagArray){
-        $cmd = $start;
-        
-        foreach ($tagArray as $tag) {
-            $cmd .= $tag . ",";
-        }
-        return substr($cmd,0,-1);
-    }
-    
-    /**
-     *
-     *  purge public cache with specified tags for this site.
-     *
-     * @since   1.0.0
-     */
-    public function purgePublic($publicTags)
-    {
-        if ((!isset($publicTags)) || ($publicTags == "")) {
-            return;
-        }
-        
-        $siteTags = Array();
-        $this->tagsForSite($siteTags, $publicTags);
-        $LShead = $this->tagCommand(self::_Cache_Purge . 'public,' ,  $siteTags) ;
-        $this->liteSpeedHeader($LShead);
-    }
-
-    /**
-     *
-     *  purge private cache with specified tags for this site.
-     *
-     * @since   1.0.0
-     */
-    public function purgePrivate($privateTags)
-    {
-        if ((!isset($privateTags)) || ($privateTags == "")) {
-            return;
-        }
-
-        $siteTags = Array();
-        $this->tagsForSite($siteTags, $privateTags);
-        $LShead = $this->tagCommand( self::_Cache_Purge . 'private,' ,  $siteTags);
-        $this->liteSpeedHeader($LShead);
     }
 
     /**
@@ -146,14 +64,8 @@ class LiteSpeedCacheCore
      */
     public function purgeAllPublic()
     {
-        if ($this->site_only_tag == "") {
-            $LShead = self::_Cache_Purge . 'public,*';
-            $this->liteSpeedHeader($LShead);
-            return;
-        }
-
-        $LShead = self::_Cache_Purge . 'public,' . $this->site_only_tag;
-        $this->liteSpeedHeader($LShead);
+        $LSheader = self::CACHE_PURGE . 'public,' . $this->site_only_tag;
+        $this->liteSpeedHeader($LSheader);
     }
 
     /**
@@ -164,13 +76,8 @@ class LiteSpeedCacheCore
      */
     public function purgeAllPrivate()
     {
-        if ($this->site_only_tag == "") {
-            $LShead = self::_Cache_Purge . 'private,*';
-            $this->liteSpeedHeader($LShead);
-            return;
-        }
-        $LShead = self::_Cache_Purge . 'private,' . $this->site_only_tag;
-        $this->liteSpeedHeader($LShead);
+        $LSheader = self::CACHE_PURGE . 'private,' . $this->site_only_tag;
+        $this->liteSpeedHeader($LSheader);
     }
 
     /**
@@ -178,25 +85,22 @@ class LiteSpeedCacheCore
      * Cache this page for public use if not cached before
      *
      * @since   1.0.0
-     * @param string $tags
      */
     public function cachePublic($publicTags)
     {
-        if (($publicTags == null) || !isset($publicTags)) {
+        if (!isset($publicTags) || ($publicTags == null)) {
             return;
         }
 
-        $LShead = self::_public_cache_control . $this->public_cache_timeout;
-        $this->liteSpeedHeader($LShead);
+        $LSheader = self::PUBLIC_CACHE_CONTROL . $this->public_cache_timeout;
+        $this->liteSpeedHeader($LSheader);
 
         $siteTags = Array();
-        if ($this->site_only_tag != "") {
-            array_push($siteTags, $this->site_only_tag);
-        }
+        array_push($siteTags, $this->site_only_tag);
         $this->tagsForSite($siteTags, $publicTags);
-        $LShead = $this->tagCommand( self::_Cache_Tag ,  $siteTags);
 
-        $this->liteSpeedHeader($LShead);
+        $LSheader = $this->tagCommand( self::CACHE_TAG ,  $siteTags);
+        $this->liteSpeedHeader($LSheader);
     }
 
     /**
@@ -207,107 +111,27 @@ class LiteSpeedCacheCore
      */
     public function cachePrivate($publicTags, $privateTags = "")
     {
-        if (($privateTags == "") || !isset($privateTags)) {
-
-            if (($publicTags == "") || !isset($publicTags) ) {
+        if ( !isset($privateTags) || ($privateTags == "") ) {
+            if ( !isset($publicTags) || ($publicTags == "")) {
                 return;
             }
         }
 
-        $LShead = self::_private_cache_control . $this->private_cache_timeout;
-        $this->liteSpeedHeader($LShead);
+        $LSheader = self::PRIVATE_CACHE_CONTROL . $this->private_cache_timeout;
+        $this->liteSpeedHeader($LSheader);
 
         $siteTags = Array();
         $this->tagsForSite($siteTags, $publicTags, "public:");
-
-        if(($publicTags!="")&&($this->site_only_tag != "")){
+        if($publicTags!=""){
             array_push($siteTags, "public:" . $this->site_only_tag);
         }
-
-        if($privateTags!=""){
-            $this->tagsForSite($siteTags, $privateTags);
-        }
         
-        if($this->site_only_tag!=""){
-            array_push($siteTags,  $this->site_only_tag);
-        }
-        else{
-            array_push($siteTags,  'pvt');
-        }
-       
+        $this->tagsForSite($siteTags, $privateTags);
+        array_push($siteTags,  $this->site_only_tag);
         
-        $LShead = $this->tagCommand( self::_Cache_Tag ,  $siteTags);
-        $this->liteSpeedHeader($LShead);
+        $LSheader = $this->tagCommand( self::CACHE_TAG ,  $siteTags);
+        $this->liteSpeedHeader($LSheader);
     }
 
-    /**
-     *
-     * Cache this page for private use if not cached before
-     *
-     * @since   1.0.0
-     */
-    private function liteSpeedHeader($LShead)
-    {
-        $this->logbuffer .= $LShead . "\t";
-        header($LShead);
-    }
-
-    /**
-     *
-     *  set or delete private cookie.
-     *
-     * @since   1.0.0
-     */
-    public function checkPrivateCookie($cachePrivate = true)
-    {
-        if ($cachePrivate) {
-            if (!isset($_COOKIE[self::_private_cookie])) {
-                setcookie(self::_private_cookie, md5((String)rand()), 0, '/');
-            }
-        } else {
-            if (isset($_COOKIE[self::_private_cookie])) {
-                setcookie(self::_private_cookie, "", 0, '/');
-            }
-        }
-    }
-
-    /**
-     *
-     *  set or delete cache vary cookie
-     *
-     * @since   1.0.0
-     */
-    public function vary($value = "")
-    {
-        if ($value == "") {
-            if (isset($_COOKIE[self::_vary_cookie])) {
-                setcookie(self::_vary_cookie, "", '0', '/');
-            }
-            return;
-        }
-        
-        if(!isset($_COOKIE[self::_vary_cookie])){
-            setcookie(self::_vary_cookie, $value, '0', '/');
-            return;
-        }
-
-        if($_COOKIE[self::_vary_cookie] != $value){
-            setcookie(self::_vary_cookie, $value, '0', '/');
-        }
-        
-    }
-
-    /**
-     *
-     *  get LiteSpeedCache special head log
-     *
-     * @since   1.0.0
-     */
-    public function getLogBuffer()
-    {
-        $retVal = $this->logbuffer;
-        $this->logbuffer = '';
-        return $retVal;
-    }
-
+    
 }

@@ -11,12 +11,18 @@ The LiteSpeedCache extension was originally written by LiteSpeed Technologies. I
 
 Prerequisites
 -------------
-This version of LiteSpeedCache requires MediaWiki 1.25 or later and LiteSpeed LSWS Server 5.1 or later.
+This version of LiteSpeedCache requires MediaWiki 1.25 or later and LiteSpeed LSWS Server 5.2.3 or later.
 
 
 
 Installing
 -------------
+Modify .htaccess file in MediaWiki site directory, adding the following directives:
+
+    <IfModule LiteSpeed>
+    CacheLookup on
+    </IfModule>
+
 Copy the LiteSpeedCache directory into the extensions folder of your MediaWiki installation. Then, add the following lines to your `LocalSettings.php` file (near the end):
 
     wfLoadExtension( 'LiteSpeedCache' );
