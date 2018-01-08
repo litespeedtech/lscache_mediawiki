@@ -1,32 +1,42 @@
 {
-	"name": "LiteSpeedCache",
-	"author": "LiteSpeed Technologies",
-	"url": "https://www.mediawiki.org/wiki/Extension:LiteSpeedCache",
-	"descriptionmsg": "litespeedcache_comment",
-	"license-name": "GPL-2.0+",
-	"type": "parserhook",
-    	"callback": "LiteSpeedCache::onRegisterExtension",
-	"MessagesDirs": {
-		"LiteSpeedCache": [
-			"i18n"
-		]
-	},
-	"SpecialPages": {
-		"LiteSpeedCache": "SpecialLiteSpeedCache"
-	},
-	"Hooks": {
-		"ArticleDeleteComplete": "LiteSpeedCache::onArticleDeleteComplete",
-		"PageContentSaveComplete": "LiteSpeedCache::onPageContentSaveComplete",
-		"ArticlePageDataAfter": "LiteSpeedCache::onArticlePageDataAfter",
-		"UserSaveSettings": "LiteSpeedCache::onUserSaveSettings",
-        	"UserLoginComplete": "LiteSpeedCache::onUserLoginComplete",
-		"UserLogoutComplete": "LiteSpeedCache::onUserLogoutComplete"
-        },
-	"AutoloadClasses": {
-		"LiteSpeedCacheBase": "LiteSpeedCacheBase.php",
-		"LiteSpeedCacheCore": "LiteSpeedCacheCore.php",
-		"SpecialLiteSpeedCache": "SpecialLiteSpeedCache.php",
-		"LiteSpeedCache": "LiteSpeedCache_body.php"
-	},
-	"manifest_version": 1
+    "name": "LiteSpeedCache",
+    "author": "LiteSpeed Technologies",
+    "url": "https://www.mediawiki.org/wiki/Extension:LiteSpeedCache",
+    "descriptionmsg": "litespeedcache_comment",
+    "license-name": "GPL-2.0+",
+    "type": "parserhook",
+    "callback": "LiteSpeedCache::onRegisterExtension",
+    "ResourceModules": {
+        "ext.liteSpeedCache": {
+                "position": "top",
+                "styles": "ext.liteSpeedCache.css"
+        }
+    },
+    "ResourceFileModulePaths": {
+            "localBasePath": "",
+            "remoteExtPath": "LiteSpeedCache"
+    },
+    "MessagesDirs": {
+            "LiteSpeedCache": [
+                    "i18n"
+            ]
+    },
+    "SpecialPages": {
+            "LiteSpeedCache": "SpecialLiteSpeedCache"
+    },
+    "Hooks": {
+            "ArticleDeleteComplete": "LiteSpeedCache::onArticleDeleteComplete",
+            "PageContentSaveComplete": "LiteSpeedCache::onPageContentSaveComplete",
+            "ArticlePageDataAfter": "LiteSpeedCache::onArticlePageDataAfter",
+            "UserSaveSettings": "LiteSpeedCache::onUserSaveSettings",
+            "UserLoginComplete": "LiteSpeedCache::onUserLoginComplete",
+            "UserLogoutComplete": "LiteSpeedCache::onUserLogoutComplete"
+    },
+    "AutoloadClasses": {
+            "LiteSpeedCacheBase": "LiteSpeedCacheBase.php",
+            "LiteSpeedCacheCore": "LiteSpeedCacheCore.php",
+            "SpecialLiteSpeedCache": "SpecialLiteSpeedCache.php",
+            "LiteSpeedCache": "LiteSpeedCache_body.php"
+    },
+    "manifest_version": 1
 }

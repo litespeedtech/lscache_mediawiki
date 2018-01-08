@@ -11,7 +11,8 @@
  */
 class SpecialLiteSpeedCache extends SpecialPage
 {
-
+    private $actionResult="";
+    
     public function __construct()
     {
         parent::__construct('LiteSpeedCache', '', true);
@@ -26,7 +27,8 @@ class SpecialLiteSpeedCache extends SpecialPage
     {
         $this->setHeaders();
         $output = $this->getOutput();
-        $output->setPageTitle($this->msg('litespeedcache_title'));
+        $output->addModuleStyles('ext.liteSpeedCache');
+        $output->setPageTitle(' '. $this->msg('litespeedcache_title'));
         $output->addWikiMsg('litespeedcache_desc');
 
         if (!$this->isSysAdmin()) {
@@ -44,21 +46,25 @@ class SpecialLiteSpeedCache extends SpecialPage
                     'private_cache_timeout' => $request->getText('privateCacheTimeout'),
                 );
                 LiteSpeedCache::saveLiteSpeedSetting($config, $this->getUser(), $this->getPageTitle());
+                $this->actionResult = $this->msg('litespeedcache_saved');;
                 $this->showView();
             } else if (isset($_POST['purge'])) {
                 LiteSpeedCache::purgeAll( $this->getUser(),  $this->getPageTitle()); 
+                $this->actionResult = $this->msg('litespeedcache_purged');
                 $this->showView();
             } else if (isset($_POST['restore'])) {
                 LiteSpeedCache::restoreLiteSpeedSetting($this->getUser(), $this->getPageTitle());
                 $this->showForm();
             } else if (isset($_POST['clear'])) {
                 LiteSpeedCache::clearLiteSpeedLogging();
+                $this->actionResult = $this->msg('litespeedcache_cleared');
                 $this->showView();
             }
         } else {
             $this->showView(false);
         }
-        $output->addHTML('<p><br/><br/><a  href="https://www.litespeedtech.com"><img src="https://www.litespeedtech.com/images/logos/litespeed/LiteSpeed_Logo.svg" alt="LiteSpeed" width="100" height="auto">&nbsp;&nbsp;</a>Powered by <a href="https://www.litespeedtech.com/solutions">LiteSpeed LSCache</a> solution.</p>');
+        $output->addHTML('<p><a class="lscache_logo" href="https://www.litespeedtech.com"></a>&nbsp;Powered by <a href="https://www.litespeedtech.com/solutions">LiteSpeed LSCache</a> solution.</p>');
+
     }
 
     /**
@@ -71,7 +77,7 @@ class SpecialLiteSpeedCache extends SpecialPage
         $output = $this->getOutput();
         $config = LiteSpeedCache::getLiteSpeedSettig();
 
-        $output->addHTML('<form action="" method="post"><fieldset><Legend>Settings</Legend>');
+        $output->addHTML('<form action="" method="post"><fieldset><Legend>LiteSpeedCache Settings</Legend>');
         $output->addHtml('<table id="mw-htmlform-info">');
         $html = '<tr class="mw-htmlform-field-HTMLInfoField"><td class="mw-label"><label for="lscacheEnabled">' . $this->msg('litespeedcache_lscache_enabled') . '</label></td>';
         $output->addHTML($html);
@@ -95,15 +101,18 @@ class SpecialLiteSpeedCache extends SpecialPage
 
         $html = '<tr class="mw-htmlform-field-HTMLInfoField"><td class="mw-label"><label for="loggingEnabled">' . $this->msg('litespeedcache_logging_enabled') . '</label></td>';
         $output->addHTML($html);
-        $html = '<td class="mw-input"><input type="checkbox" id="loggingEnabled" name="loggingEnabled" ' . $this->check($config['logging_enabled']) . '></td></tr>';
+        $html = '<td class="mw-input"><input type="checkbox" id="loggingEnabled" name="loggingEnabled" ' . $this->check($config['logging_enabled']) . '>&nbsp;'.  $this->msg('litespeedcache_clearlabel') . '</td></tr></table>';
         $output->addHTML($html);
 
-        $html = '<tr class="mw-htmlform-field-HTMLInfoField"><td class="mw-label"><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button type = "submit" name="restore">' . $this->msg('litespeedcache_restore') . '</button>&nbsp;<button type = "submit" name="save">' . $this->msg('litespeedcache_save') . '</button></td>';
+        $html = '<p><hr style="margin-top: 10px;margin-bottom: 10px;"/>&nbsp;&nbsp;<button type = "submit" name="save">' . $this->msg('litespeedcache_save') . '</button>&nbsp;<button type = "submit" name="restore">' . $this->msg('litespeedcache_restore') . '</button></p></fieldset>';
         $output->addHTML($html);
-        $html = '<td class="mw-input"><br/><button type = "submit" name="purge">' . $this->msg('litespeedcache_purge') . '</button>&nbsp;<button type = "submit" name="clear">' . $this->msg('litespeedcache_clear') . '</button></td></tr> ';
+        $html = '<p>&nbsp;&nbsp;&nbsp;&nbsp;<button type = "submit" name="purge">' . $this->msg('litespeedcache_purge') . '</button>&nbsp;&nbsp;' . $this->msg('litespeedcache_purgecomment') . '</p> ';
         $output->addHTML($html);
-        $output->addHTML('</table></fieldset></form>');
-        $output->addHTML('<p>&nbsp;&nbsp;&#42&nbsp;' . $this->msg('litespeedcache_beta') . '</p>');
+        $html = '<p>&nbsp;&nbsp;&nbsp;&nbsp;<button type = "submit" name="clear">' . $this->msg('litespeedcache_clear') . '</button>&nbsp;&nbsp;' . $this->msg('litespeedcache_clearcomment') . '</p> ';
+        $output->addHTML($html);
+        $output->addHTML('</form>');
+        $output->addHTML('<p><br/>&nbsp;&nbsp;&#42&nbsp;' . $this->msg('litespeedcache_beta') . '</p>');
+        $output->addHTML('<p style="color:#777;">&nbsp;&nbsp;&nbsp;&nbsp;Copyright <i class="uk-icon-copyright"></i>2013-2018 LiteSpeed Technologies Inc. All Rights Reserved.</p>');
     }
 
     /**
@@ -115,6 +124,9 @@ class SpecialLiteSpeedCache extends SpecialPage
     {
         $config = LiteSpeedCache::getLiteSpeedSettig();
         $output = $this->getOutput();
+        if($this->actionResult!=""){
+            $output->addHTML('<p><font color=red>'. $this->actionResult . '</font></p>');
+        }
         $wikitext = $this->msg('litespeedcache_lscache_enabled') . $this->enabled($config['lscache_enabled']);
         $output->addWikiText('<br/>' . $wikitext);
         $wikitext = $this->msg('litespeedcache_public_cache_timeout') . $config['public_cache_timeout'];

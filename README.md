@@ -23,6 +23,15 @@ Modify .htaccess file in MediaWiki site directory, adding the following directiv
     CacheLookup on
     </IfModule>
 
+If your MediaWiki site has enabled MobileFrontend extension, adding the following directives:
+
+    <IfModule LiteSpeed> 
+    RewriteEngine On
+    RewriteCond %{HTTP_USER_AGENT} Mobile|Android|Silk/|Kindle|BlackBerry|Opera\ Mini|Opera\ Mobi [NC] RewriteRule .* - [E=Cache-Control:vary=ismobile]
+    RewriteRule .* - [E=Cache-Vary:stopMobileRedirect,mf_useformat]
+    </IfModule>
+
+
 Copy the LiteSpeedCache directory into the extensions folder of your MediaWiki installation. Then, add the following lines to your `LocalSettings.php` file (near the end):
 
     wfLoadExtension( 'LiteSpeedCache' );

@@ -13,15 +13,14 @@ class LiteSpeedCache
 {
 
     const DB_SETTING = 'litespeed_settings';
+    const DEFAULT_VIEW = 'desktopLogout';
 
     private static $lscache_enabled = false;
     private static $login_user_cachable = false;
     private static $logging_enabled = false;
     private static $userLogedin;
     private static $lscInstance;
-    private static $debugEnabled = false;
     private static $settingLoad = false;
-    
 
     /**
      *
@@ -36,6 +35,17 @@ class LiteSpeedCache
         array_push($wgLogTypes, "litespeedcache");
         $siteTag = substr(md5($wgExtensionDirectory), 0, 4);
         self::$lscInstance = new LiteSpeedCacheCore($siteTag);
+        
+        if(class_exists('MobileContext')){
+            if(!isset($_GET['mobileaction'])){
+                return;
+            }
+            $action = $_GET['mobileaction'];
+            if($action!=null){
+                global $wgCookiePath;
+                self::$lscInstance->checkVary('forceRefresh', $wgCookiePath);
+            }
+        }
     }
 
     /**
@@ -124,7 +134,6 @@ class LiteSpeedCache
      */
     public static function onArticlePageDataAfter(WikiPage $article, $row)
     {
-
         if (self::isPostBack() || !self::isCacheEnabled()) {
             return;
         }
@@ -138,12 +147,14 @@ class LiteSpeedCache
                 return;
             }
             self::$lscInstance->checkPrivateCookie($wgCookiePath);
-            if(self::$lscInstance->checkVary('Login', $wgCookiePath)){
+            $varyKey = self::getVaryKey("Login");
+            if(self::$lscInstance->checkVary($varyKey, $wgCookiePath)){
                 self::$lscInstance->cachePrivate($tag);
             }
             
         } else {
-            if (self::$lscInstance->checkVary('', $wgCookiePath)) {
+            $varyKey = self::getVaryKey("Logout");
+            if (self::$lscInstance->checkVary($varyKey, $wgCookiePath)) {
                 self::$lscInstance->cachePublic($tag);
             }
         }
@@ -163,7 +174,8 @@ class LiteSpeedCache
         
         global $wgCookiePath;
         self::$lscInstance->checkPrivateCookie($wgCookiePath);
-        self::$lscInstance->checkVary('Login', $wgCookiePath);
+        $varyKey = self::getVaryKey("Login");
+        self::$lscInstance->checkVary($varyKey , $wgCookiePath);
         self::$userLogedin = true;
 
         if (!self::isCacheEnabled()) {
@@ -188,8 +200,8 @@ class LiteSpeedCache
     {
 
         global $wgCookiePath;
-        self::$lscInstance->checkPrivateCookie($wgCookiePath);
-        self::$lscInstance->checkVary('', $wgCookiePath);
+        $varyKey = self::getVaryKey("Logout");
+        self::$lscInstance->checkVary($varyKey, $wgCookiePath);
         self::$userLogedin = false;
         
         if (!self::isCacheEnabled()) {
@@ -222,6 +234,7 @@ class LiteSpeedCache
 
         self::log("UserSaveSettings", $user, $user->getUserPage(), self::$lscInstance->getLogBuffer());
     }
+
 
     /**
      *
@@ -257,7 +270,6 @@ class LiteSpeedCache
      */
     public static function getLiteSpeedSettig()
     {
-
         $db = wfGetDB(DB_SLAVE);
 
         if (!$db->tableExists(self::DB_SETTING)) {
@@ -399,8 +411,9 @@ class LiteSpeedCache
             return;
         }
 
-        if (self::$debugEnabled) {
-            wfDebug($action. "\n" . $comment);
+        global $wgShowDebug;
+        if ($wgShowDebug) {
+            wfDebug('[LiteSpeedCache] ' . $action. "\n" . $comment);
             #self::simpleDebug($action . "\n" . $comment);
         }
 
@@ -476,4 +489,29 @@ class LiteSpeedCache
         return false;
     }
 
+
+    /**
+     *
+     * Check if current request is a post back request, then page will not be cached
+     *
+     * @since   1.0.0
+     */
+    private static function getVaryKey($status)
+    {
+        $device = "desktop";
+        
+        if(class_exists('MobileContext')){
+            if(MobileContext::singleton()->shouldDisplayMobileView()){
+                $device = 'mobile';
+            }
+        }
+
+        $varyKey = $device . $status;
+        if($varyKey==self::DEFAULT_VIEW){
+            return '';
+        }
+        return $varyKey;
+    }
+    
+    
 }

@@ -20,6 +20,7 @@ class LiteSpeedCacheCore extends LiteSpeedCacheBase
      *
      * @since   1.0.0
      */
+    
     public function __construct($tag = '')
     {
         if(!isset($tag) || ($tag=='')){
