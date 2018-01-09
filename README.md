@@ -3,9 +3,14 @@ LiteSpeedCache for MediaWiki
 
 The LiteSpeedCache plugin is a MediaWiki extension for MediaWiki sites running on a LiteSpeed webserver. Enable its LSCache feature to speed up page loading, reduce response time, and tremendously reduce server load for MediaWiki sites.
 
-See https://www.litespeedtech.com/products/cache-plugins for more information.
+* It's simple, easy to use, and will speed up your wiki site up to 100 times faster, after 3 minutes of setup, with no extra cost.
+* A special page integrated into MediaWiki provides full control of cache behavior.
+* No more worring about cache sync problems. LScache will automatically purge a page when related article content has changed. You can set a longer cache expiration time to improve visitor experience, confident that the cache will be purged when relevant content changes.
+* An optional private cache (for logged-in users) also will sync automatically when article content changes. No matter which user changes an article, all of the logged-in users will be served the new article content, regardless of the private cache expiration setting.
 
 The LiteSpeedCache extension was originally written by LiteSpeed Technologies. It is released under the GNU General Public Licence (GPL).
+
+See https://www.litespeedtech.com/products/cache-plugins for more information.
 
 
 
