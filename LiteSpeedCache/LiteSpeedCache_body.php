@@ -3,7 +3,7 @@
 /*
  *  Major Hook functions for LiteSpeedCache extention
  *
- *  @since      1.0.0
+ *  @since      1.0.1
  *  @author     LiteSpeed Technologies <info@litespeedtech.com>
  *  @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  *  @license    https://opensource.org/licenses/GPL-3.0
@@ -13,7 +13,7 @@ class LiteSpeedCache
 {
 
     const DB_SETTING = 'litespeed_settings';
-    const DEFAULT_VIEW = 'desktopLogout';
+    const TITLE_PREFIX = ['','Talk:','User:', 'User_talk:', 'Project:', 'Project_talk:', 'File:', 'File_talk:', 'MediaWiki:', 'MediaWiki_talk:','Template:','Template_talk:','Help:','Help_talk:','Category:', 'Category_talk:'];
 
     private static $lscache_enabled = false;
     private static $login_user_cachable = false;
@@ -93,7 +93,7 @@ class LiteSpeedCache
      *
      * Purge Article Cache once Article deleted
      *
-     * @since   0.1
+     * @since   1.0.1
      */
     public static function onArticleDeleteComplete($article, User &$user, $reason, $id, Content $content = null, LogEntry $logEntry)
     {
@@ -101,7 +101,7 @@ class LiteSpeedCache
             return;
         }
 
-        $tag = $article->getTitle()->mUrlform;
+        $tag = self::getTags($article);
         self::$lscInstance->purgePublic($tag);
 
         self::log("ArticleDelete", $user, $article->getTitle(), self::$lscInstance->getLogBuffer());
@@ -112,7 +112,7 @@ class LiteSpeedCache
      *
      * Purge Article Cache once Changed Article Content or Changed Discussion content for this Article.
      *
-     * @since   0.1
+     * @since   1.0.1
      */
     public static function onPageContentSaveComplete($article, $user, $content, $summary, $isMinor, $isWatch, $section, $flags, $revision, $status, $baseRevId, $undidRevId)
     {
@@ -120,7 +120,7 @@ class LiteSpeedCache
             return;
         }
 
-        $tag = $article->getTitle()->mUrlform;
+        $tag = self::getTags($article);
         self::$lscInstance->purgePublic($tag);
 
         self::log("PageContentChange", $user, $article->getTitle(), self::$lscInstance->getLogBuffer());
@@ -130,17 +130,19 @@ class LiteSpeedCache
      *
      * Notify LSWS to cache this page once Article content was read from DB
      *
-     * @since   0.1
+     * @since   1.0.1
      */
     public static function onArticlePageDataAfter(WikiPage $article, $row)
     {
+        if (defined("GetParserOutput")) {
+            return;
+        }
+        
         if (self::isPostBack() || !self::isCacheEnabled()) {
             return;
         }
 
-        global $wgCookiePath;
-        
-        $tag = $article->getTitle()->mUrlform;
+        global $wgCookiePath, $wgUser;
 
         if (self::isUserLogin()) {
             if (!self::$login_user_cachable) {
@@ -149,12 +151,13 @@ class LiteSpeedCache
             self::$lscInstance->checkPrivateCookie($wgCookiePath);
             $varyKey = self::getVaryKey("Login");
             if(self::$lscInstance->checkVary($varyKey, $wgCookiePath)){
+                $tag = self::getTags($article,true);
                 self::$lscInstance->cachePrivate($tag);
             }
-            
         } else {
             $varyKey = self::getVaryKey("Logout");
             if (self::$lscInstance->checkVary($varyKey, $wgCookiePath)) {
+                $tag = self::getTags($article,true);
                 self::$lscInstance->cachePublic($tag);
             }
         }
@@ -162,6 +165,46 @@ class LiteSpeedCache
         global $wgUser;
         self::log("ArticlePageLoaded", $wgUser, $article->getTitle(), self::$lscInstance->getLogBuffer());
     }
+    
+
+    /**
+     *
+     * If Article has templates, put template title to tags, otherwise only put article title to tags.
+     *
+     * @since   1.0.0
+     */
+    private static function getTags(WikiPage $article, $parseTemplate = false){
+        $title = $article->getTitle();
+        $namespace = $title->getNamespace();
+        $tag = $title->mUrlform;
+        if($namespace>15){
+            $tag .= $namespace;
+        }
+        else if($namespace>0){
+            $tag = self::TITLE_PREFIX[$namespace] . $title->mUrlform;
+        }
+        
+        if(!$parseTemplate){
+            return $tag;
+        }
+
+        $parserOptions = ParserOptions::newFromAnon();
+        define("GetParserOutput", true);
+        $paserOutput = $article->getParserOutput($parserOptions);
+        if(!$paserOutput){
+            return $tag;
+        }
+            
+        foreach ( $paserOutput->getTemplates() as $ns => $template ) {
+            foreach ( array_keys( $template ) as $title ) {
+                $tag .= ',' . self::TITLE_PREFIX[$ns] . wfUrlencode(strtr( $title, ' ', '_' ))  ;
+            }
+        }
+        
+        return $tag;
+    }
+
+            
 
     /**
      *
@@ -494,10 +537,14 @@ class LiteSpeedCache
      *
      * Check if current request is a post back request, then page will not be cached
      *
-     * @since   1.0.0
+     * @since   1.0.1
      */
-    private static function getVaryKey($status)
+    private static function getVaryKey($loginStatus)
     {
+        global $wgLanguageCode;
+        
+        $defaultVary= 'desktopLogout' . $wgLanguageCode ;
+
         $device = "desktop";
         
         if(class_exists('MobileContext')){
@@ -506,8 +553,9 @@ class LiteSpeedCache
             }
         }
 
-        $varyKey = $device . $status;
-        if($varyKey==self::DEFAULT_VIEW){
+        $varyKey = $device . $loginStatus . RequestContext::getMain()->getLanguage()->getCode() ;
+        
+        if($varyKey==$defaultVary){
             return '';
         }
         return $varyKey;
