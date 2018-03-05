@@ -190,7 +190,7 @@ class LiteSpeedCache
 
         $parserOptions = ParserOptions::newFromAnon();
         define("GetParserOutput", true);
-        $paserOutput = $article->getParserOutput($parserOptions);
+        $paserOutput = $article->getParserOutput($parserOptions,null,true);
         if(!$paserOutput){
             return $tag;
         }
