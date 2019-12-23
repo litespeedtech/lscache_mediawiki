@@ -313,7 +313,7 @@ class LiteSpeedCache
      */
     public static function getLiteSpeedSettig()
     {
-        $db = wfGetDB(DB_SLAVE);
+        $db = wfGetDB(DB_MASTER);
 
         if (!$db->tableExists(self::DB_SETTING)) {
             return null;
