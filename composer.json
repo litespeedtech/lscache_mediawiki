@@ -2,12 +2,10 @@
     "name": "litespeed/lscache-mediawiki",
     "description": "MediaWiki Full Page Cache for LiteSpeed Web Server",
     "type": "mediawiki-extension",
-    "version": "1.0.1",
     "keywords": ["mediawiki","cache","litespeed"],
     "homepage": "https://www.litespeedtech.com/products/cache-plugins",    
     "require": {
-        "php": ">=5.4",
-        "wikimedia": ">=5.2.3"
+        "php": ">=5.4"
     },
     "license": "GPL-3.0+"
 }
