@@ -313,7 +313,7 @@ class LiteSpeedCache
      */
     public static function getLiteSpeedSettig()
     {
-        $db = wfGetDB(DB_MASTER);
+        $db = wfGetDB(DB_REPLICA);
 
         if (!$db->tableExists(self::DB_SETTING)) {
             return null;
@@ -395,7 +395,7 @@ class LiteSpeedCache
             $fields = Array('lskey' => $lskey, 'lsvalue' => $lsval);
             $db->insert(self::DB_SETTING, $fields);
         }
-        $db->commit();
+        # $db->commit();  
     }
 
     /**
@@ -523,9 +523,6 @@ class LiteSpeedCache
      */
     private static function isPostBack()
     {
-        if (count($_GET) > 1) {
-            return true;
-        }
         if (count($_POST) > 0) {
             return true;
         }

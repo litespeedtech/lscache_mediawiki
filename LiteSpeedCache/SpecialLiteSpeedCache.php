@@ -128,15 +128,15 @@ class SpecialLiteSpeedCache extends SpecialPage
             $output->addHTML('<p><font color=red>'. $this->actionResult . '</font></p>');
         }
         $wikitext = $this->msg('litespeedcache_lscache_enabled') . $this->enabled($config['lscache_enabled']);
-        $output->addWikiText('<br/>' . $wikitext);
+        $this->addWikiText($output,'<br/>' . $wikitext);
         $wikitext = $this->msg('litespeedcache_public_cache_timeout') . $config['public_cache_timeout'];
-        $output->addWikiText($wikitext);
+        $this->addWikiText($output,$wikitext);
         $wikitext = $this->msg('litespeedcache_login_user_cachable') . $this->enabled($config['login_user_cachable']);
-        $output->addWikiText($wikitext);
+        $this->addWikiText($output,$wikitext);
         $wikitext = $this->msg('litespeedcache_private_cache_timeout') . $config['private_cache_timeout'];
-        $output->addWikiText($wikitext);
+        $this->addWikiText($output,$wikitext);
         $wikitext = $this->msg('litespeedcache_logging_enabled') . $this->enabled($config['logging_enabled']);
-        $output->addWikiText($wikitext);
+        $this->addWikiText($output,$wikitext);
         if ($this->isSysAdmin()) {
             if($fromEdit){
                 $output->addHTML('<a href="./edit">' . $this->msg( 'litespeedcache_change_setting') . '</a>');
@@ -189,4 +189,14 @@ class SpecialLiteSpeedCache extends SpecialPage
         return 'wiki';
     }
 
+
+    protected function addWikiText($output,$text)
+    {
+        if ( method_exists( $output, 'addWikiTextAsInterface' ) ) {
+                // MW 1.32+
+                $output->addWikiTextAsInterface( $text );
+        } else {
+                $output->addWikiText( $text );
+        }
+    }
 }
