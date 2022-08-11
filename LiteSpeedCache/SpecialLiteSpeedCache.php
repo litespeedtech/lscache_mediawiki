@@ -139,12 +139,12 @@ class SpecialLiteSpeedCache extends SpecialPage
         $this->addWikiText($output,$wikitext);
         if ($this->isSysAdmin()) {
             if($fromEdit){
-                $output->addHTML('<a href="./edit">' . $this->msg( 'litespeedcache_change_setting') . '</a>');
-                $output->addHTML('&nbsp;&nbsp;<a href="../Special:Log/litespeedcache" target="_blank">' . $this->msg('litespeedcache_show_logs') . '</a>');
+                $output->addHTML('<a href="'. trim($_SERVER['REQUEST_URI']) .'">' . $this->msg( 'litespeedcache_change_setting') . '</a>');
+                $output->addHTML('&nbsp;&nbsp;<a href="'. $this->getLogExtension() . '" target="_blank">' . $this->msg('litespeedcache_show_logs') . '</a>');
             }
             else{
-                $output->addHTML('<a href="./Special:LiteSpeedCache/edit">' . $this->msg('litespeedcache_change_setting') . '</a>');
-                $output->addHTML('&nbsp;&nbsp;<a href="./Special:Log/litespeedcache" target="_blank">' . $this->msg('litespeedcache_show_logs') . '</a>');
+                $output->addHTML('<a href="'. $this->getExtensionRoot() . '/edit">' . $this->msg('litespeedcache_change_setting') . '</a>');
+                $output->addHTML('&nbsp;&nbsp;<a href="'. $this->getLogExtension() . '" target="_blank">' . $this->msg('litespeedcache_show_logs') . '</a>');
             }
         }
     }
@@ -199,4 +199,28 @@ class SpecialLiteSpeedCache extends SpecialPage
                 $output->addWikiText( $text );
         }
     }
+    
+    protected  function getExtensionRoot()
+    {
+        $url = trim($_SERVER['REQUEST_URI']);
+        if(strpos($url, 'index.php')===false){
+            return './Special:LiteSpeedCache';
+        } else {
+            return $url;
+        }
+    }
+    
+    protected  function getLogExtension()
+    {
+        $url = trim($_SERVER['REQUEST_URI']);
+        if(strpos($url, 'index.php')===false){
+            return './Special:Log/litespeedcache';
+        } else if(str_ends_with($url, '/edit')){
+            $url = substr($url, 0, -5);
+            return str_replace('LiteSpeedCache','Log',$url).'/litespeedcache';
+        } else {
+            return str_replace('LiteSpeedCache','Log',$url).'/litespeedcache';
+        }
+    }
+    
 }
