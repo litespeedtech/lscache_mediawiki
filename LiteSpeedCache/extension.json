@@ -26,6 +26,7 @@
     },
     "Hooks": {
             "ArticleDeleteComplete": "LiteSpeedCache::onArticleDeleteComplete",
+            "PageDeleteComplete": "LiteSpeedCache::onPageDeleteComplete",
             "PageContentSaveComplete": "LiteSpeedCache::onPageContentSaveComplete",
             "PageSaveComplete": "LiteSpeedCache::onPageSaveComplete",
             "ArticlePageDataAfter": "LiteSpeedCache::onArticlePageDataAfter",
