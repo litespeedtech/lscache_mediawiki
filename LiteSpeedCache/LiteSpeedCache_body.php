@@ -92,6 +92,8 @@ class LiteSpeedCache
     /**
      *
      * Purge Article Cache once Article deleted
+     * @deprecated deprecated since 1.37.0
+     * @see onPageDeleteComplete()
      *
      * @since   1.0.1
      */
@@ -580,9 +582,31 @@ class LiteSpeedCache
 
     /**
      *
-     * Purge Article Cache once Changed Article Content or Changed Discussion content for this Article.
+     * Purge Article Cache once Article deleted
+     */
+    public static function onPageDeleteComplete(
+        MediaWiki\Page\ProperPageIdentity $page,
+        MediaWiki\Permissions\Authority $deleter,
+        string $reason,
+        int $pageID,
+        MediaWiki\Revision\RevisionRecord $deletedRev,
+        ManualLogEntry $logEntry,
+        int $archivedRevisionCount
+    ) {
+        if (!self::isCacheEnabled()) {
+            return;
+        }
+
+        $article = new WikiPage($page);
+        $tag = self::getTags($article);
+        self::$lscInstance->purgePublic($tag);
+
+        self::log("PageDelete", $deleter, $page->getTitle(), self::$lscInstance->getLogBuffer());
+    }
+
+    /**
      *
-     * @since   1.35.0
+     * Purge Article Cache once Changed Article Content or Changed Discussion content for this Article.
      */
     public static function onPageSaveComplete( WikiPage $wikiPage, MediaWiki\User\UserIdentity $user, string $summary, int $flags, MediaWiki\Revision\RevisionRecord $revisionRecord, MediaWiki\Storage\EditResult $editResult ) {
         if (!self::isCacheEnabled()) {
@@ -592,6 +616,6 @@ class LiteSpeedCache
         $tag = self::getTags($wikiPage);
         self::$lscInstance->purgePublic($tag);
 
-        self::log("PageContentChange", $user, $wikiPage->getTitle(), self::$lscInstance->getLogBuffer());
+        self::log("PageSave", $user, $wikiPage->getTitle(), self::$lscInstance->getLogBuffer());
     }
 }
