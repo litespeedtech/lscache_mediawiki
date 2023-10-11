@@ -114,7 +114,7 @@ class LiteSpeedCache
      *
      * @since   1.0.1
      */
-    public static function onPageContentSaveComplete($article, $user, $content, $summary=null, $isMinor=null, $isWatch=null, $section=null, $flags=null, $revision=null, $status=null, $baseRevId=null, $undidRevId=null )
+    public static function onPageSaveComplete($article, $user, $content, $summary=null, $isMinor=null, $isWatch=null, $section=null, $flags=null, $revision=null, $status=null, $baseRevId=null, $undidRevId=null )
     {
         if (!self::isCacheEnabled()) {
             return;
