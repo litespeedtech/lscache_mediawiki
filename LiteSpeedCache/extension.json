@@ -27,6 +27,7 @@
     "Hooks": {
             "ArticleDeleteComplete": "LiteSpeedCache::onArticleDeleteComplete",
             "PageSaveComplete": "LiteSpeedCache::onPageSaveComplete",
+            "PageContentSaveComplete": "LiteSpeedCache::onPageSaveComplete",
             "ArticlePageDataAfter": "LiteSpeedCache::onArticlePageDataAfter",
             "UserSaveSettings": "LiteSpeedCache::onUserSaveSettings",
             "UserLoginComplete": "LiteSpeedCache::onUserLoginComplete",
