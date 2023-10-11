@@ -176,7 +176,7 @@ class LiteSpeedCache
     private static function getTags(WikiPage $article, $parseTemplate = false){
         $title = $article->getTitle();
         $namespace = $title->getNamespace();
-        $tag = $title->mUrlform;
+        $tag = $title->getPartialURL();
         if($namespace>15){
             $tag .= $namespace;
         }
