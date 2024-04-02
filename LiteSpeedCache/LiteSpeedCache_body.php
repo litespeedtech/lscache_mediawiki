@@ -151,13 +151,13 @@ class LiteSpeedCache
             self::$lscInstance->checkPrivateCookie($wgCookiePath);
             $varyKey = self::getVaryKey("Login");
             if(self::$lscInstance->checkVary($varyKey, $wgCookiePath)){
-                $tag = self::getTags($article,true);
+                $tag = self::getTags($article);
                 self::$lscInstance->cachePrivate($tag);
             }
         } else {
             $varyKey = self::getVaryKey("Logout");
             if (self::$lscInstance->checkVary($varyKey, $wgCookiePath)) {
-                $tag = self::getTags($article,true);
+                $tag = self::getTags($article);
                 self::$lscInstance->cachePublic($tag);
             }
         }
