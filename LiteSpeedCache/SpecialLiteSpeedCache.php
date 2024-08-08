@@ -9,6 +9,8 @@
  * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
+use MediaWiki\MediaWikiServices;
+
 class SpecialLiteSpeedCache extends SpecialPage
 {
     private $actionResult="";
@@ -159,7 +161,7 @@ class SpecialLiteSpeedCache extends SpecialPage
         if (!$this->getUser()) {
             return false;
         }
-        $groups = $this->getUser()->getGroups();
+        $groups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($user);
         return in_array("sysop", $groups, false);
     }
 
