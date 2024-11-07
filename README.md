@@ -22,10 +22,9 @@ This version of LiteSpeedCache requires MediaWiki 1.25+ and LiteSpeed LSWS Serve
 Installing
 -------------
 
-Download latest release and exact to extensions folder.
+Download latest release and exact it to extensions folder.
 
-
-If you use Composer to manage dependencies use the following command in the root folder:
+Or if you use Composer to manage dependencies, use the following command in the root folder:
 
 ```
 composer require litespeed/lscache-mediawiki
