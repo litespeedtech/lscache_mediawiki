@@ -16,30 +16,45 @@ See https://www.litespeedtech.com/products/cache-plugins for more information.
 
 Prerequisites
 -------------
-This version of LiteSpeedCache requires MediaWiki 1.25 or later and LiteSpeed LSWS Server 5.2.3 or later.
-
+This version of LiteSpeedCache requires MediaWiki 1.25+ and LiteSpeed LSWS Server 5.2.3+.
 
 
 Installing
 -------------
+
+Download latest release and exact to extensions folder.
+
+
+If you use Composer to manage dependencies use the following command in the root folder:
+
+```
+composer require litespeed/lscache-mediawiki
+```
+
 Modify .htaccess file in MediaWiki site directory, adding the following directives:
 
+```
     <IfModule LiteSpeed>
     CacheLookup on
     </IfModule>
+```
 
 If your MediaWiki site has enabled MobileFrontend extension, adding the following directives:
 
+```
     <IfModule LiteSpeed> 
     RewriteEngine On
     RewriteCond %{HTTP_USER_AGENT} Mobile|Android|Silk/|Kindle|BlackBerry|Opera\ Mini|Opera\ Mobi [NC] RewriteRule .* - [E=Cache-Control:vary=ismobile]
     RewriteRule .* - [E=Cache-Vary:stopMobileRedirect,mf_useformat]
     </IfModule>
+```
 
 
 Copy the LiteSpeedCache directory into the extensions folder of your MediaWiki installation. Then, add the following lines to your `LocalSettings.php` file (near the end):
 
+```
     wfLoadExtension( 'LiteSpeedCache' );
+```
 
 After installation, You can navigate to **Special:Version** on your wiki to verify that the extension is successfully installed.
 
