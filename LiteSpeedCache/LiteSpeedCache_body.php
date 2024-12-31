@@ -342,7 +342,7 @@ class LiteSpeedCache
     {
         self::loadSetting();
 
-        $db = wfGetDB(DB_MASTER);
+        $db = wfGetDB(DB_PRIMARY);
 
         if (($config["lscache_enabled"] != self::$lscache_enabled) || ($config["login_user_cachable"] != self::$login_user_cachable)) {
             self::$lscInstance->purgeAllPublic();
@@ -367,7 +367,7 @@ class LiteSpeedCache
     private static function initLiteSpeedSetting()
     {
         self::log(__METHOD__);
-        $db = wfGetDB(DB_MASTER);
+        $db = wfGetDB(DB_PRIMARY);
 
         $config = array(
             'lscache_enabled' => false,
@@ -406,7 +406,7 @@ class LiteSpeedCache
      */
     public static function restoreLiteSpeedSetting($user = null, $target = null)
     {
-        $db = wfGetDB(DB_MASTER);
+        $db = wfGetDB(DB_PRIMARY);
         
         if (self::isCacheEnabled()) {
             self::$lscInstance->purgeAllPublic();
@@ -438,7 +438,7 @@ class LiteSpeedCache
     public static function clearLiteSpeedLogging()
     {
         self::log(__METHOD__);
-        $db = wfGetDB(DB_MASTER);
+        $db = wfGetDB(DB_PRIMARY);
         $db->delete('logging', ['log_type' => 'litespeedcache']);
     }
 
