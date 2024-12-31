@@ -161,6 +161,7 @@ class SpecialLiteSpeedCache extends SpecialPage
         if (!$this->getUser()) {
             return false;
         }
+        $user = $this->getUser(); // Retrieve the current user
         $groups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($user);
         return in_array("sysop", $groups, false);
     }
