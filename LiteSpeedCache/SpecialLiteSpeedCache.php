@@ -77,7 +77,7 @@ class SpecialLiteSpeedCache extends SpecialPage
     {
         $this->setHeaders();
         $output = $this->getOutput();
-        $config = LiteSpeedCache::getLiteSpeedSettig();
+    $config = LiteSpeedCache::getLiteSpeedSetting();
 
         $output->addHTML('<form action="" method="post"><fieldset><Legend>LiteSpeedCache Settings</Legend>');
         $output->addHtml('<table id="mw-htmlform-info">');
@@ -124,7 +124,7 @@ class SpecialLiteSpeedCache extends SpecialPage
      */
     private function showView($fromEdit=true)
     {
-        $config = LiteSpeedCache::getLiteSpeedSettig();
+    $config = LiteSpeedCache::getLiteSpeedSetting();
         $output = $this->getOutput();
         if($this->actionResult!=""){
             $output->addHTML('<p><font color=red>'. $this->actionResult . '</font></p>');
@@ -158,10 +158,10 @@ class SpecialLiteSpeedCache extends SpecialPage
      */
     private function isSysAdmin()
     {
-        if (!$this->getUser()) {
+        $user = $this->getUser();
+        if (!$user) {
             return false;
         }
-        $user = $this->getUser(); // Retrieve the current user
         $groups = MediaWikiServices::getInstance()->getUserGroupManager()->getUserGroups($user);
         return in_array("sysop", $groups, false);
     }
