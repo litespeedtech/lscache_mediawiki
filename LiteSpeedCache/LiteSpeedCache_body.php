@@ -1,4 +1,8 @@
+
 <?php
+use MediaWiki\User\User;
+use MediaWiki\Request\RequestContext;
+use MediaWiki\Log\ManualLogEntry;
 
 /*
  *  Major Hook functions for LiteSpeedCache extention
@@ -95,7 +99,7 @@ class LiteSpeedCache
      *
      * @since   1.0.1
      */
-    public static function onArticleDeleteComplete($article, User &$user, $reason, $id, Content $content = null, LogEntry $logEntry)
+    public static function onArticleDeleteComplete($article, $user, $reason, $id, $content = null, $logEntry = null)
     {
         if (!self::isCacheEnabled()) {
             return;
@@ -142,7 +146,8 @@ class LiteSpeedCache
             return;
         }
 
-        global $wgCookiePath, $wgUser;
+    global $wgCookiePath;
+    $user = \MediaWiki\Request\RequestContext::getMain()->getUser();
 
         if (self::isUserLogin()) {
             if (!self::$login_user_cachable) {
@@ -162,8 +167,7 @@ class LiteSpeedCache
             }
         }
 
-        global $wgUser;
-        self::log("ArticlePageLoaded", $wgUser, $article->getTitle(), self::$lscInstance->getLogBuffer());
+        self::log("ArticlePageLoaded", $user, $article->getTitle(), self::$lscInstance->getLogBuffer());
     }
     
 
@@ -212,7 +216,7 @@ class LiteSpeedCache
      *
      * @since   0.1
      */
-    public static function onUserLoginComplete(User &$user, &$inject_html, $direct)
+    public static function onUserLoginComplete($user, &$inject_html, $direct)
     {
         
         global $wgCookiePath;
@@ -239,7 +243,7 @@ class LiteSpeedCache
      *
      * @since   0.1
      */
-    public static function onUserLogoutComplete(&$user, &$inject_html, $old_name)
+    public static function onUserLogoutComplete($user, &$inject_html, $old_name)
     {
 
         global $wgCookiePath;
@@ -291,17 +295,14 @@ class LiteSpeedCache
             return self::$userLogedin;
         }
 
-        global $wgUser;
-        
-        if($wgUser==null){
+        $user = RequestContext::getMain()->getUser();
+        if($user==null){
             return false;
         }
-        
-        if(!$wgUser instanceof User){
+        if(!$user instanceof User){
             return false;
         }
-
-        return $wgUser->isLoggedIn();
+        return $user->isRegistered();
     }
 
 
@@ -311,7 +312,7 @@ class LiteSpeedCache
      *
      * @since   1.0.0
      */
-    public static function getLiteSpeedSettig()
+    public static function getLiteSpeedSetting()
     {
         $db = wfGetDB(DB_REPLICA);
 
@@ -342,7 +343,7 @@ class LiteSpeedCache
     {
         self::loadSetting();
 
-        $db = wfGetDB(DB_PRIMARY);
+        $db = wfGetDB(DB_MASTER);
 
         if (($config["lscache_enabled"] != self::$lscache_enabled) || ($config["login_user_cachable"] != self::$login_user_cachable)) {
             self::$lscInstance->purgeAllPublic();
@@ -367,7 +368,7 @@ class LiteSpeedCache
     private static function initLiteSpeedSetting()
     {
         self::log(__METHOD__);
-        $db = wfGetDB(DB_PRIMARY);
+        $db = wfGetDB(DB_MASTER);
 
         $config = array(
             'lscache_enabled' => false,
@@ -406,7 +407,7 @@ class LiteSpeedCache
      */
     public static function restoreLiteSpeedSetting($user = null, $target = null)
     {
-        $db = wfGetDB(DB_PRIMARY);
+        $db = wfGetDB(DB_MASTER);
         
         if (self::isCacheEnabled()) {
             self::$lscInstance->purgeAllPublic();
@@ -438,7 +439,7 @@ class LiteSpeedCache
     public static function clearLiteSpeedLogging()
     {
         self::log(__METHOD__);
-        $db = wfGetDB(DB_PRIMARY);
+        $db = wfGetDB(DB_MASTER);
         $db->delete('logging', ['log_type' => 'litespeedcache']);
     }
 
