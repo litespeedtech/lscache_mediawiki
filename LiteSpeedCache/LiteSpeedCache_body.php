@@ -1,4 +1,9 @@
+
 <?php
+use MediaWiki\User\User;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Log\ManualLogEntry;
+use MediaWiki\Title\Title;
 
 /*
  *  Major Hook functions for LiteSpeedCache extention
@@ -63,7 +68,7 @@ class LiteSpeedCache
         }
         self::$settingLoad = true;
 
-        $config = self::getLiteSpeedSettig();
+    $config = self::getLiteSpeedSetting();
         if ($config == null) {
             self::initLiteSpeedSetting();
             return;
@@ -95,7 +100,7 @@ class LiteSpeedCache
      *
      * @since   1.0.1
      */
-    public static function onArticleDeleteComplete($article, User &$user, $reason, $id, Content $content = null, LogEntry $logEntry)
+    public static function onArticleDeleteComplete($article, $user, $reason, $id, $content = null, $logEntry = null)
     {
         if (!self::isCacheEnabled()) {
             return;
@@ -142,7 +147,8 @@ class LiteSpeedCache
             return;
         }
 
-        global $wgCookiePath, $wgUser;
+    global $wgCookiePath;
+    $user = RequestContext::getMain()->getUser();
 
         if (self::isUserLogin()) {
             if (!self::$login_user_cachable) {
@@ -162,8 +168,7 @@ class LiteSpeedCache
             }
         }
 
-        global $wgUser;
-        self::log("ArticlePageLoaded", $wgUser, $article->getTitle(), self::$lscInstance->getLogBuffer());
+        self::log("ArticlePageLoaded", $user, $article->getTitle(), self::$lscInstance->getLogBuffer());
     }
     
 
@@ -181,7 +186,7 @@ class LiteSpeedCache
             $tag .= $namespace;
         }
         else if($namespace>0){
-            $tag = self::TITLE_PREFIX[$namespace] . $title->mUrlform;
+            $tag = self::TITLE_PREFIX[$namespace] . $title->getDBkey();
         }
         
         if(!$parseTemplate){
@@ -212,7 +217,7 @@ class LiteSpeedCache
      *
      * @since   0.1
      */
-    public static function onUserLoginComplete(User &$user, &$inject_html, $direct)
+    public static function onUserLoginComplete($user, &$inject_html, $direct)
     {
         
         global $wgCookiePath;
@@ -239,7 +244,7 @@ class LiteSpeedCache
      *
      * @since   0.1
      */
-    public static function onUserLogoutComplete(&$user, &$inject_html, $old_name)
+    public static function onUserLogoutComplete($user, &$inject_html, $old_name)
     {
 
         global $wgCookiePath;
@@ -291,17 +296,14 @@ class LiteSpeedCache
             return self::$userLogedin;
         }
 
-        global $wgUser;
-        
-        if($wgUser==null){
+        $user = RequestContext::getMain()->getUser();
+        if($user==null){
             return false;
         }
-        
-        if(!$wgUser instanceof User){
+        if(!$user instanceof User){
             return false;
         }
-
-        return $wgUser->isLoggedIn();
+        return $user->isRegistered();
     }
 
 
@@ -311,7 +313,7 @@ class LiteSpeedCache
      *
      * @since   1.0.0
      */
-    public static function getLiteSpeedSettig()
+    public static function getLiteSpeedSetting()
     {
         $db = wfGetDB(DB_REPLICA);
 
@@ -342,17 +344,39 @@ class LiteSpeedCache
     {
         self::loadSetting();
 
-        $db = wfGetDB(DB_PRIMARY);
+        // Use DB_PRIMARY if defined, else fallback to DB_MASTER for older MW
+        if (defined('DB_PRIMARY')) {
+            $db = wfGetDB(DB_PRIMARY);
+        } else {
+            $db = wfGetDB(DB_MASTER);
+        }
 
+        // Ensure table exists before update
+        if (!$db->tableExists(self::DB_SETTING)) {
+            self::initLiteSpeedSetting();
+        }
+
+        // Convert boolean values to string for DB
+        foreach ($config as $lskey => $lsval) {
+            if ($lskey === 'lscache_enabled' || $lskey === 'login_user_cachable' || $lskey === 'logging_enabled') {
+                $lsval = $lsval ? '1' : '0';
+            }
+            $conds = Array('lskey' => $lskey);
+            $values = Array('lsvalue' => $lsval);
+            // If row exists, update; else, insert
+            $row = $db->selectRow(self::DB_SETTING, '*', $conds);
+            if ($row) {
+                $db->update(self::DB_SETTING, $values, $conds);
+            } else {
+                $fields = Array('lskey' => $lskey, 'lsvalue' => $lsval);
+                $db->insert(self::DB_SETTING, $fields);
+            }
+        }
+
+        // Purge cache if options changed
         if (($config["lscache_enabled"] != self::$lscache_enabled) || ($config["login_user_cachable"] != self::$login_user_cachable)) {
             self::$lscInstance->purgeAllPublic();
             self::log("CacheOptionChanged", $user, $target, self::$lscInstance->getLogBuffer());
-        }
-
-        foreach ($config as $lskey => $lsval) {
-            $conds = Array('lskey' => $lskey);
-            $values = Array('lsvalue' => $lsval);
-            $db->update(self::DB_SETTING, $values, $conds);
         }
 
         self::log("SaveLiteSpeedSetting", $user, $target, var_export($config, true));
@@ -367,7 +391,13 @@ class LiteSpeedCache
     private static function initLiteSpeedSetting()
     {
         self::log(__METHOD__);
-        $db = wfGetDB(DB_PRIMARY);
+        if (defined('DB_PRIMARY')) {
+            $db = wfGetDB(DB_PRIMARY);
+        } elseif (defined('DB_MASTER')) {
+            $db = wfGetDB(DB_MASTER);
+        } else {
+            $db = wfGetDB('DB_PRIMARY');
+        }
 
         $config = array(
             'lscache_enabled' => false,
@@ -406,7 +436,13 @@ class LiteSpeedCache
      */
     public static function restoreLiteSpeedSetting($user = null, $target = null)
     {
-        $db = wfGetDB(DB_PRIMARY);
+        if (defined('DB_PRIMARY')) {
+            $db = wfGetDB(DB_PRIMARY);
+        } elseif (defined('DB_MASTER')) {
+            $db = wfGetDB(DB_MASTER);
+        } else {
+            $db = wfGetDB('DB_PRIMARY');
+        }
         
         if (self::isCacheEnabled()) {
             self::$lscInstance->purgeAllPublic();
@@ -438,7 +474,13 @@ class LiteSpeedCache
     public static function clearLiteSpeedLogging()
     {
         self::log(__METHOD__);
-        $db = wfGetDB(DB_PRIMARY);
+        if (defined('DB_PRIMARY')) {
+            $db = wfGetDB(DB_PRIMARY);
+        } elseif (defined('DB_MASTER')) {
+            $db = wfGetDB(DB_MASTER);
+        } else {
+            $db = wfGetDB('DB_PRIMARY');
+        }
         $db->delete('logging', ['log_type' => 'litespeedcache']);
     }
 
@@ -464,19 +506,29 @@ class LiteSpeedCache
             return;
         }
 
-        if ($user == null) {
+        // Defensive: Only log if $user is valid
+        if (!is_object($user) || !method_exists($user, 'getName')) {
             return;
         }
-
-        if ($target == null) {
-            return;
+        // Convert $target to Title object if needed
+        if (!is_object($target) || !($target instanceof Title)) {
+            if (is_string($target) && $target !== '') {
+                $target = Title::newFromText($target);
+            } else {
+                return;
+            }
         }
-
         if ($comment == "") {
             return;
         }
 
-        self::doLog($action, $user, $target, $comment);
+        try {
+            self::doLog($action, $user, $target, $comment);
+        } catch (\Throwable $e) {
+            if (isset($wgShowDebug) && $wgShowDebug) {
+                wfDebug('[LiteSpeedCache] Logging error: ' . $e->getMessage());
+            }
+        }
     }
 
     /**
