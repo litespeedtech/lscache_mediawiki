@@ -1,7 +1,6 @@
 
 <?php
 use MediaWiki\User\User;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Log\ManualLogEntry;
 use MediaWiki\Title\Title;
 
@@ -315,7 +314,7 @@ class LiteSpeedCache
      */
     public static function getLiteSpeedSetting()
     {
-        $db = wfGetDB(DB_REPLICA);
+        $db = self::getDB(false);
 
         if (!$db->tableExists(self::DB_SETTING)) {
             return null;
@@ -345,11 +344,8 @@ class LiteSpeedCache
         self::loadSetting();
 
         // Use DB_PRIMARY if defined, else fallback to DB_MASTER for older MW
-        if (defined('DB_PRIMARY')) {
-            $db = wfGetDB(DB_PRIMARY);
-        } else {
-            $db = wfGetDB(DB_MASTER);
-        }
+        $db = self::getDB();
+
 
         // Ensure table exists before update
         if (!$db->tableExists(self::DB_SETTING)) {
@@ -391,13 +387,7 @@ class LiteSpeedCache
     private static function initLiteSpeedSetting()
     {
         self::log(__METHOD__);
-        if (defined('DB_PRIMARY')) {
-            $db = wfGetDB(DB_PRIMARY);
-        } elseif (defined('DB_MASTER')) {
-            $db = wfGetDB(DB_MASTER);
-        } else {
-            $db = wfGetDB('DB_PRIMARY');
-        }
+        $db = self::getDB();
 
         $config = array(
             'lscache_enabled' => false,
@@ -436,14 +426,8 @@ class LiteSpeedCache
      */
     public static function restoreLiteSpeedSetting($user = null, $target = null)
     {
-        if (defined('DB_PRIMARY')) {
-            $db = wfGetDB(DB_PRIMARY);
-        } elseif (defined('DB_MASTER')) {
-            $db = wfGetDB(DB_MASTER);
-        } else {
-            $db = wfGetDB('DB_PRIMARY');
-        }
-        
+        $db = self::getDB();
+
         if (self::isCacheEnabled()) {
             self::$lscInstance->purgeAllPublic();
         }
@@ -474,13 +458,7 @@ class LiteSpeedCache
     public static function clearLiteSpeedLogging()
     {
         self::log(__METHOD__);
-        if (defined('DB_PRIMARY')) {
-            $db = wfGetDB(DB_PRIMARY);
-        } elseif (defined('DB_MASTER')) {
-            $db = wfGetDB(DB_MASTER);
-        } else {
-            $db = wfGetDB('DB_PRIMARY');
-        }
+        $db = self::getDB();
         $db->delete('logging', ['log_type' => 'litespeedcache']);
     }
 
@@ -610,5 +588,18 @@ class LiteSpeedCache
         return $varyKey;
     }
     
-    
+    private static function getDB($primary=true){
+        if(class_exists('MediaWiki\MediaWikiServices') && method_exists(MediaWiki\MediaWikiServices::getInstance(), 'getConnectionProvider')) {
+            if($primary) return MediaWiki\MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
+            else return MediaWiki\MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
+        } else if (!$primary) {
+            return  wfGetDB(DB_REPLICA);
+        } else if (defined('DB_PRIMARY')) {
+            return wfGetDB(DB_PRIMARY);
+        } else if (defined('DB_MASTER')) {
+            return wfGetDB(DB_MASTER);
+        } else {
+            return wfGetDB('DB_PRIMARY');
+        }       
+    }
 }
